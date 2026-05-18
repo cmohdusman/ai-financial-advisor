@@ -1,0 +1,114 @@
+data_task:
+  description: >
+    Process the given transaction dataset.
+
+    Steps:
+    1. Extract transactions with fields: date, amount, merchant
+    2. Remove duplicate records
+    3. Normalize amounts (consistent currency and format)
+    4. Handle missing or invalid entries
+
+    Output JSON:
+    [
+      {
+        "date": "YYYY-MM-DD",
+        "amount": 1000,
+        "merchant": "Amazon"
+      }
+    ]
+
+  expected_output: "Cleaned structured transaction dataset"
+  agent: "data_agent"
+
+
+analysis_task:
+  description: >
+    Analyze financial transactions and categorize expenses.
+
+    Steps:
+    1. Categorize into:
+       - Food, Rent, Travel, EMI, Shopping, Utilities
+    2. Identify:
+       - Monthly spending trends
+       - Top 3 expense categories
+       - Unusual spikes
+
+    Output JSON:
+    {
+      "categories": ["Food", "Rent"],
+      "values": [30, 40],
+      "insights": [
+        "Food expenses are high",
+        "Significant increase in travel spending"
+      ]
+    }
+
+  expected_output: "Categorized expenses with insights"
+  agent: "analysis_agent"
+
+
+risk_task:
+  description: >
+    Evaluate the user's financial risk profile.
+
+    Inputs:
+    - Age
+    - Salary
+    - Investments
+    - Loans
+
+    Rules:
+    - High loans compared to income → Conservative
+    - Younger age with high savings → Aggressive
+    - Otherwise → Moderate
+
+    Output JSON:
+    {
+      "risk_profile": "Moderate",
+      "justification": "Balanced income and moderate liabilities"
+    }
+
+  expected_output: "User risk classification"
+  agent: "risk_agent"
+
+
+advisory_task:
+  description: >
+    Provide financial advice based on transaction analysis and risk profile.
+
+    Steps:
+    1. Suggest savings improvements
+    2. Recommend investment allocation
+    3. Provide debt reduction strategies
+
+    Output JSON:
+    {
+      "advice": [
+        "Invest 20% of income in mutual funds",
+        "Reduce discretionary spending by 10%",
+        "Build an emergency fund of 6 months salary"
+      ]
+    }
+
+  expected_output: "Financial advisory recommendations"
+  agent: "advisory_agent"
+  context: [risk_task,analysis_task]
+
+
+qa_task:
+  description: >
+    Answer user financial queries.
+
+    Examples:
+    - Can I afford a loan?
+    - Am I overspending?
+    - How can I save more?
+
+    Instructions:
+    - Use available financial data
+    - Provide clear, actionable answers
+    - Be concise but informative
+
+  expected_output: "Answer to user query"
+  agent: "qa_agent"
+  context: [risk_task,analysis_task]

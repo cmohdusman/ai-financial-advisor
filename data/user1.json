@@ -1,0 +1,11 @@
+{
+  "user_id": "user_1",
+  "name": "Rahul Sharma",
+  "profile_type": "moderate",
+  "age": 30,
+  "salary": 85000,
+  "investments": 250000,
+  "loans": 60000,
+  "goals": "Save for house and long-term wealth creation",
+  "expected_behavior": "Balanced spending with regular rent, EMI, and moderate discretionary expenses"
+}

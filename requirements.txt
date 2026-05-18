@@ -10,3 +10,5 @@ langchain-classic
 openai
 crewai
 matplotlib
+streamlit
+requests

@@ -99,16 +99,28 @@ qa_task:
   description: >
     Answer user financial queries.
 
-    Examples:
-    - Can I afford a loan?
-    - Am I overspending?
-    - How can I save more?
+    User Query:
+    {query}
+
+    User Financial Profile:
+    - Age: {age}
+    - Salary: {salary}
+    - Investments: {investments}
+    - Loans: {loans}
 
     Instructions:
-    - Use available financial data
-    - Provide clear, actionable answers
-    - Be concise but informative
+    - ALWAYS use the provided financial profile
+    - DO NOT ask the user again for financial details
+    - Provide a direct and actionable answer    
+    - Format answer in clean paragraphs
+    - Use bullet points for advice
+    - Avoid broken words or spacing issues
+    - Ensure numbers are properly formatted (e.g., 20,000)
+    - Use BOTH profile and spending data
+    - Identify overspending patterns
+    - Give personalized advice
+    - DO NOT ask for data again
+
 
   expected_output: "Answer to user query"
-  agent: "qa_agent"
-  context: [risk_task,analysis_task]
+  agent: qa_agent

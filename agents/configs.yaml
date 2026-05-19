@@ -107,7 +107,7 @@ tasks:
       }
 
     expected_output: Risk classification
-    agent: risk_agent   # ✅ FIXED (this was missing!)
+    agent: risk_agent   
     context:
       - analysis_task
  

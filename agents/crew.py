@@ -28,7 +28,7 @@ def load_config(path: str = "agents/configs.yaml") -> Dict:
     if not config or "agents" not in config or "tasks" not in config:
         raise ValueError("Invalid config structure")
 
-    logger.info("✅ Config loaded successfully")
+    logger.info("Config loaded successfully")
     return config
 
 
@@ -47,7 +47,7 @@ def safe_parse(output: Any) -> Dict:
             return output
 
     except Exception as e:
-        logger.warning(f"⚠ Failed to parse output: {e}")
+        logger.warning(f"Failed to parse output: {e}")
 
     return {}
 
@@ -126,8 +126,8 @@ agents = build_agents(config)
 tasks = build_tasks(config, agents)
 
 
-ANALYSIS_CREW_NAME = "fianncial_analysis_crew"
-QA_CREW_NAME = "fianncial_qa_crew"
+ANALYSIS_CREW_NAME = "financial_analysis_crew"
+QA_CREW_NAME = "financial_qa_crew"
 
 financial_crew = build_crew(ANALYSIS_CREW_NAME, config, agents, tasks)
 financial_qa_crew = build_crew(QA_CREW_NAME, config, agents, tasks)
@@ -176,4 +176,4 @@ def run_qa_query(query: str, profile: Dict) -> str:
 
     except Exception as e:
         logger.error(f"QA execution failed: {e}")
-        return "❌ Unable to process your request at the moment."
+        return "Unable to process your request at the moment."

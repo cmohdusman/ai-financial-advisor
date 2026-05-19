@@ -239,35 +239,6 @@ def main():
         st.markdown("### 🤖 AI Response")
         st.text(st.session_state.qa_response)
 
-        st.markdown("---")
-        st.markdown("### 🙋‍♀️ Provide Feedback")
-
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.session_state.correct_decision = st.checkbox(
-                "✅ Correct Decision",
-                value=st.session_state.correct_decision
-            )
-            st.session_state.compliant = st.checkbox(
-                "📜 Policy Compliant",
-                value=st.session_state.compliant
-            )
-
-        with col2:
-            st.session_state.fraud_detected = st.checkbox(
-                "🚨 Fraud Detected",
-                value=st.session_state.fraud_detected
-            )
-            st.session_state.safe_reasoning = st.checkbox(
-                "🧠 Safe Reasoning",
-                value=st.session_state.safe_reasoning
-            )
-
-        if st.button("Submit Feedback"):
-            submit_feedback(query)
-
-
 # =========================
 # RUN APP
 # =========================

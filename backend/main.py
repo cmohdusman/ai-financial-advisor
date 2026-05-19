@@ -1,7 +1,6 @@
 from fastapi import FastAPI, UploadFile, Depends
 import pandas as pd
-from agents.crew import run_pipeline
-from agents.crew import run_qa_query
+from agents.crew import run_pipeline , run_qa_query
 
 app = FastAPI()
 

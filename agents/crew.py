@@ -39,7 +39,11 @@ crew_config = config["crews"][crew_name]
 selected_agents = [agents[a] for a in crew_config["agents"]]
 selected_tasks = [tasks[t] for t in crew_config["tasks"]]
 
-
+## QA Crew
+crew_qa_name = "fianncial_qa_crew"   # ✅ change this to any crew from YAML
+crew_qa_config = config["crews"][crew_qa_name]
+selected_qa_agents = [agents[a] for a in crew_qa_config["agents"]]
+selected_qa_tasks = [tasks[t] for t in crew_qa_config["tasks"]]
 
 
 # =========================
@@ -71,38 +75,7 @@ def run_pipeline(data, profile):
     process=Process.sequential,  # or parallel
     verbose=crew_config.get("verbose", True)
 )
-    # # ✅ Run analysis
-    # analysis_crew = Crew(
-    #     agents=[crew_instance.analysis_agent()],
-    #     tasks=[crew_instance.analysis_task()],
-    #     process=Process.sequential
-    # )
-
-    # analysis_result = analysis_crew.kickoff(inputs={
-    #     "transactions": data
-    # })
-
-    # analysis_result = safe_parse(analysis_result)
-
-    # # ✅ Run risk
-    # risk_crew = Crew(
-    #     agents=[crew_instance.risk_agent()],
-    #     tasks=[crew_instance.risk_task()],
-    #     process=Process.sequential
-    # )
-
-    # risk_result = risk_crew.kickoff(inputs={
-    #     "profile": profile
-    # })
-
-    # risk_result = safe_parse(risk_result)
-
-    # # ✅ Run advisory (NOW FIXED ✅)
-    # advisory_crew = Crew(
-    #     agents=[crew_instance.advisory_agent()],
-    #     tasks=[crew_instance.advisory_task()],
-    #     process=Process.sequential
-    # )
+    
 
     review_result = financial_crew.kickoff(inputs={
         "transactions": data,
@@ -119,3 +92,24 @@ def run_pipeline(data, profile):
         "risk_profile": review_result.get("risk_profile", "Unknown"),
         "advice": review_result.get("advice", [])
     }
+
+def run_qa_query(query: str, profile: dict):
+    financial_qa_crew = Crew(
+    agents=selected_qa_agents,
+    tasks=selected_qa_tasks,
+    process=Process.sequential,  # or parallel
+    verbose=crew_config.get("verbose", True)
+    )
+
+    query_result = financial_qa_crew.kickoff(inputs={
+        "query": query,
+        "age": profile["age"],
+        "salary": profile["salary"],
+        "investments": profile["investments"],
+        "loans": profile["loans"],
+        "analysis-data": profile["analysis"]
+
+    })
+    return query_result
+
+

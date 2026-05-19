@@ -147,8 +147,15 @@ tasks:
       User Financial Profile: - Age: {age} - Salary: {salary} - Investments:
       {investments} - Loans: {loans}
 
-      Instructions: - First determine if the question is related to finance. -
-      If the question is financial:
+      Instructions: 
+      - First determine if the question is related to finance.
+      - Consider ANY query about salary, income, savings, investments, loans, or profile details as financial. 
+      - If the user asks about their own financial data (e.g., salary, investments, loans):
+        - Directly fetch from provided inputs
+        - Do NOT generate advice unnecessarily
+        - Answer clearly with the value
+
+      - If the question is financial:
           - Use the user's financial profile and analysis data
           - Provide personalized financial advice
       - If the question is NOT financial:
@@ -163,18 +170,30 @@ tasks:
       again
     expected_output: Answer to user query
     agent: qa_agent
+    context:
+      - review_task
 crews:
   fianncial_analysis_crew:
     name: Financial Analysis Crew
     agents:
+      - data_agent
       - analysis_agent
       - risk_agent
       - advisory_agent
       - review_agent
     tasks:
+      - data_task
       - analysis_task
       - risk_task
       - advisory_task
       - review_task
+    process: sequential
+    verbose: true
+  fianncial_qa_crew:
+    name: Financial QNA Crew
+    agents:
+      - qa_agent
+    tasks:
+      - qa_task
     process: sequential
     verbose: true

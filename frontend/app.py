@@ -2,168 +2,171 @@ import streamlit as st
 import requests
 import matplotlib.pyplot as plt
 
+# =========================
+# CONFIG
+# =========================
+API_BASE_URL = "http://localhost:8000"
+ANALYZE_API = f"{API_BASE_URL}/analyze/"
+QA_API = f"{API_BASE_URL}/qa/"
+FEEDBACK_API = f"{API_BASE_URL}/feedback/"
+
 st.set_page_config(page_title="AI Financial Advisor", layout="wide")
 
-st.title("💰 AI Financial Advisor & Portfolio Assistant")
+# =========================
+# SESSION STATE INIT
+# =========================
+DEFAULT_SESSION_STATE = {
+    "analysis_data": {},
+    "qa_response": None,
+    "correct_decision": False,
+    "compliant": False,
+    "fraud_detected": False,
+    "safe_reasoning": False,
+}
+
+for key, value in DEFAULT_SESSION_STATE.items():
+    if key not in st.session_state:
+        st.session_state[key] = value
 
 # =========================
-# Sidebar: User Profile
+# API HELPERS
 # =========================
-st.sidebar.header("👤 User Profile")
+def post_request(url, retries=3, timeout=60, **kwargs):
+    for attempt in range(retries):
+        try:
+            response = requests.post(url, timeout=timeout, **kwargs)
+            response.raise_for_status()
+            return response.json()
 
-age = st.sidebar.number_input("Age", 18, 100, 30)
-salary = st.sidebar.number_input("Salary", value=50000.0)
-investments = st.sidebar.number_input("Investments", value=100000.0)
-loans = st.sidebar.number_input("Loans", value=20000.0)
-goals = st.sidebar.text_area("Goals", "Save for house")
+        except requests.exceptions.Timeout:
+            if attempt < retries - 1:
+                st.warning("⏳ Retrying request...")
+            else:
+                st.error("❌ Request timed out. Please try again.")
+        except requests.exceptions.RequestException as e:
+            st.error(f"❌ API Error: {str(e)}")
+            break
+
+    return None
 
 # =========================
-# File Upload
+# SIDEBAR - USER PROFILE
 # =========================
-st.header("📂 Upload Transaction CSV")
-file = st.file_uploader("Upload your transactions file", type=["csv"])
+def render_sidebar():
+    st.sidebar.header("👤 User Profile")
+
+    profile = {
+        "age": st.sidebar.slider("Age", 18, 100, 30),
+        "salary": st.sidebar.slider("Salary", 100,100000, 10000),
+        "investments": st.sidebar.slider("Investments", 100,100000,5000),
+        "loans": st.sidebar.slider("Loans", 100,10000,5000),
+        "goals": st.sidebar.text_area("Goals", "Save for house"),
+    }
+    
+    return profile
+
+
+
 
 # =========================
-# Analyze Finance
+# EXPENSE CHART
 # =========================
-if file and st.button("🚀 Analyze"):
+def render_expense_chart(data):
+    st.subheader("📊 Expense Breakdown")
 
+    if "categories" not in data or "values" not in data:
+        st.warning("No category data returned")
+        return
+
+    fig, ax = plt.subplots(figsize=(2, 2))
+    wedges, _, _ = ax.pie(
+        data["values"],
+        autopct="%1.1f%%",
+        textprops={'fontsize': 8}
+    )
+
+    ax.set_title("Expense Breakdown", fontsize=10)
+    ax.legend(
+        wedges,
+        data["categories"],
+        loc="center left",
+        bbox_to_anchor=(1, 0.5),
+        fontsize=8
+    )
+
+    st.pyplot(fig, use_container_width=False)
+
+
+# =========================
+# RISK PROFILE
+# =========================
+def render_risk_profile(data):
+    st.subheader("⚠ Risk Profile")
+
+    risk = data.get("risk_profile", "Unknown").lower()
+
+    if risk == "high":
+        st.error("High Risk")
+    elif risk == "moderate":
+        st.warning("Moderate Risk")
+    else:
+        st.success("Low Risk")
+
+
+# =========================
+# ADVICE & INSIGHTS
+# =========================
+def render_advice(data):
+    st.subheader("💡 Financial Advice")
+
+    advice = data.get("advice", [])
+    if isinstance(advice, list):
+        for item in advice:
+            st.write(f"- {item}")
+    else:
+        st.write(advice)
+
+    if "insights" in data:
+        st.subheader("📌 Insights")
+        for insight in data["insights"]:
+            st.write(f"🔹 {insight}")
+
+
+# =========================
+# ANALYZE FUNCTION
+# =========================
+def analyze_finances(file, profile):
     with st.spinner("Analyzing financial data..."):
 
-        # ✅ IMPORTANT: correct file format
-        files = {
-            "file": (file.name, file, "text/csv")
-        }
+        files = {"file": (file.name, file, "text/csv")}
 
-        params = {
-            "age": age,
-            "salary": salary,
-            "investments": investments,
-            "loans": loans,
-            "goals": goals
-        }
+        result = post_request(
+            ANALYZE_API,
+            files=files,
+            params=profile
+        )
 
-        try:
-            response = requests.post(
-                "http://localhost:8000/analyze/",
-                files=files,
-                params=params
-            )
+        if result:
+            st.session_state.analysis_data = result
+            st.success("✅ Analysis Completed!")
 
-            if response.status_code == 200:
-                data = response.json()
-                st.session_state.analysis_data = data
+            render_expense_chart(result)
+            render_risk_profile(result)
+            render_advice(result)
 
-                st.success("✅ Analysis Completed!")
-
-                # =========================
-                # Expense Chart
-                # =========================
-                st.subheader("📊 Expense Breakdown")
-
-                if "categories" in data and "values" in data:
-                    # ✅ Create centered section with limited width
-                    
-                    col1, col2 = st.columns([1, 3])  # 👈 small left, big empty right
-                    with col1:
-                        fig, ax = plt.subplots(figsize=(3, 3))
-
-                        wedges, texts, autotexts = ax.pie(
-                            data["values"],
-                            autopct="%1.1f%%",
-                            textprops={'fontsize': 8}
-                        )
-                        ax.set_title("Expense Breakdown", fontsize=10)
-                        ax.legend(
-                            wedges,
-                            data["categories"],
-                            loc="center left",
-                            bbox_to_anchor=(1, 0.5),
-                            fontsize=8
-                        )
-                        st.pyplot(fig)
-                else:
-                    st.warning("No category data returned")
-
-                # =========================
-                # Risk Profile
-                # =========================
-                st.subheader("⚠ Risk Profile")
-                risk = data.get("risk_profile", "Unknown")
-
-                if risk.lower() == "high":
-                    st.error("High Risk")
-                elif risk.lower() == "moderate":
-                    st.warning("Moderate Risk")
-                else:
-                    st.success("Low Risk")
-
-                # =========================
-                # Advice
-                # =========================
-                st.subheader("💡 Financial Advice")
-
-                advice = data.get("advice", [])
-
-                if isinstance(advice, list):
-                    for a in advice:
-                        st.write(f"✅ {a}")
-                else:
-                    st.write(advice)
-
-                # =========================
-                # Insights (optional)
-                # =========================
-                if "insights" in data:
-                    st.subheader("📌 Insights")
-                    for i in data["insights"]:
-                        st.write(f"🔹 {i}")
-
-            else:
-                st.error(f"❌ Backend error: {response.text}")
-
-        except Exception as e:
-            st.error(f"❌ Connection failed: {e}")
 
 # =========================
-# QA Section
+# QA HANDLER
 # =========================
-# ✅ Step 3: ALWAYS SHOW RESPONSE if exists
-# =========================
-# QA Section
-# =========================
-st.header("💬 Ask Financial Questions")
-
-# ✅ Form for Enter-key submission
-with st.form("qa_form"):
-    query = st.text_input("Ask something like: Can I afford a loan?")
-    submit = st.form_submit_button("Ask AI")
-
-# ✅ Initialize session state safely
-if "qa_response" not in st.session_state:
-    st.session_state.qa_response = None
-
-if "correct_decision" not in st.session_state:
-    st.session_state.correct_decision = False
-if "compliant" not in st.session_state:
-    st.session_state.compliant = False
-if "fraud_detected" not in st.session_state:
-    st.session_state.fraud_detected = False
-if "safe_reasoning" not in st.session_state:
-    st.session_state.safe_reasoning = False
-
-# ✅ Handle Ask AI
-if submit and query:
-
-    # ✅ Get analysis data safely
+def handle_qa(query, profile):
     analysis_data = st.session_state.get("analysis_data", {})
 
     payload = {
         "query": query,
-        "age": int(age),
-        "salary": float(salary),
-        "investments": float(investments),
-        "loans": float(loans),
+        "age": int(profile["age"]),
+        "salary": int(profile["salary"]),
+        "investments": int(profile["investments"]),
+        "loans": int(profile["loans"]),
         "analysis": {
             "categories": analysis_data.get("categories", []),
             "values": analysis_data.get("values", []),
@@ -171,88 +174,99 @@ if submit and query:
         }
     }
 
-    try:
-        response = requests.post(
-            "http://localhost:8000/qa/",
-            json=payload
-        )
+    result = post_request(QA_API, json=payload)
 
-        if response.status_code == 200:
-            result = response.json()
-
-            # ✅ Store response
-            st.session_state.qa_response = result["response"]
-
-            # ✅ Reset feedback on new question
-            st.session_state.correct_decision = False
-            st.session_state.compliant = False
-            st.session_state.fraud_detected = False
-            st.session_state.safe_reasoning = False
-
-        else:
-            st.error(f"❌ Error {response.status_code}")
-
-    except Exception as e:
-        st.error(f"❌ Connection failed: {e}")
+    if result:
+        st.session_state.qa_response = result.get("raw", "No response received.")
 
 
-# ✅ =========================
-# ✅ SHOW RESPONSE + FEEDBACK
-# ✅ =========================
-if st.session_state.get("qa_response"):
+# =========================
+# FEEDBACK HANDLER
+# =========================
+def submit_feedback(query):
+    payload = {
+        "query": query,
+        "response": st.session_state.qa_response,
+        "correct_decision": st.session_state.correct_decision,
+        "compliant": st.session_state.compliant,
+        "fraud_detected": st.session_state.fraud_detected,
+        "safe_reasoning": st.session_state.safe_reasoning
+    }
 
-    st.markdown("### 🤖 AI Response")
-    st.text(st.session_state.qa_response)   # ✅ clean rendering (no color issues)
+    result = post_request(FEEDBACK_API, json=payload)
 
-    # ✅ Feedback Section
-    st.markdown("---")
-    st.markdown("### 🙋‍♀️ Provide Feedback")
+    if result:
+        reward = result.get("reward", 0)
+        st.success(f"✅ Feedback submitted! Reward Score: {reward}")
 
-    col1, col2 = st.columns(2)
 
-    with col1:
-        st.session_state.correct_decision = st.checkbox(
-            "✅ Correct Decision",
-            value=st.session_state.correct_decision
-        )
-        st.session_state.compliant = st.checkbox(
-            "✅ Policy Compliant",
-            value=st.session_state.compliant
-        )
+# =========================
+# MAIN UI
+# =========================
+def main():
+    st.title("💰 AI Financial Advisor & Portfolio Assistant")
 
-    with col2:
-        st.session_state.fraud_detected = st.checkbox(
-            "🚨 Fraud Detected",
-            value=st.session_state.fraud_detected
-        )
-        st.session_state.safe_reasoning = st.checkbox(
-            "🧠 Safe Reasoning",
-            value=st.session_state.safe_reasoning
-        )
+    profile = render_sidebar()
 
-    # ✅ Submit feedback
-    if st.button("Submit Feedback"):
+    # =========================
+    # FILE UPLOAD
+    # =========================
+    st.header("📂 Upload Transaction CSV")
+    file = st.file_uploader("Upload your transactions file", type=["csv"])
 
-        feedback_payload = {
-            "query": query,
-            "response": st.session_state.qa_response,
-            "correct_decision": st.session_state.correct_decision,
-            "compliant": st.session_state.compliant,
-            "fraud_detected": st.session_state.fraud_detected,
-            "safe_reasoning": st.session_state.safe_reasoning
-        }
+    if file and st.button("🚀 Analyze"):
+        analyze_finances(file, profile)
 
-        try:
-            fb_response = requests.post(
-                "http://localhost:8000/feedback/",
-                json=feedback_payload
+    # =========================
+    # QA SECTION
+    # =========================
+    st.header("💬 Ask Financial Questions")
+
+    with st.form("qa_form"):
+        query = st.text_input("Ask something like: Can I afford a loan?")
+        submit = st.form_submit_button("Ask AI")
+
+    if submit and query:
+        handle_qa(query, profile)
+
+    # =========================
+    # RESPONSE DISPLAY
+    # =========================
+    if st.session_state.qa_response:
+        st.markdown("### 🤖 AI Response")
+        st.text(st.session_state.qa_response)
+
+        st.markdown("---")
+        st.markdown("### 🙋‍♀️ Provide Feedback")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.session_state.correct_decision = st.checkbox(
+                "✅ Correct Decision",
+                value=st.session_state.correct_decision
+            )
+            st.session_state.compliant = st.checkbox(
+                "📜 Policy Compliant",
+                value=st.session_state.compliant
             )
 
-            if fb_response.status_code == 200:
-                reward = fb_response.json()["reward"]
-                st.success(f"✅ Feedback submitted! Reward Score: {reward}")
-            else:
-                st.error("❌ Feedback failed")
+        with col2:
+            st.session_state.fraud_detected = st.checkbox(
+                "🚨 Fraud Detected",
+                value=st.session_state.fraud_detected
+            )
+            st.session_state.safe_reasoning = st.checkbox(
+                "🧠 Safe Reasoning",
+                value=st.session_state.safe_reasoning
+            )
 
-        except Exception as e:
-            st.error(f"❌ Feedback error: {e}")
+        if st.button("Submit Feedback"):
+            submit_feedback(query)
+
+
+# =========================
+# RUN APP
+# =========================
+if __name__ == "__main__":
+    main()

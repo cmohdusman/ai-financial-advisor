@@ -173,11 +173,14 @@ def handle_qa(query, profile):
             "insights": analysis_data.get("insights", [])
         }
     }
-
-    result = post_request(QA_API, json=payload)
+    
+    result = post_request(QA_API, json=payload, timeout=60)
 
     if result:
-        st.session_state.qa_response = result.get("raw", "No response received.")
+        if isinstance(result, dict):
+            st.session_state.qa_response = result.get("raw", str(result))
+        else:
+            st.session_state.qa_response = str(result)
 
 
 # =========================

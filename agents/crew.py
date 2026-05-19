@@ -1,97 +1,121 @@
-from typing import List
-from crewai import Agent, Crew, Process, Task
-from crewai.agents.agent_builder.base_agent import BaseAgent
-from crewai.project import CrewBase, agent, crew, task
+
+from crewai import Agent, Task, Crew, Process
+import yaml
+
+import os
+print(os.getcwd())
+
+
+
+with open("agents/configs.yaml", "r") as f:
+    config = yaml.safe_load(f)
+
+agents = {}
+
+for name, details in config["agents"].items():
+    agents[name] = Agent(
+        role=details["role"],
+        goal=details["goal"],
+        backstory=details["backstory"],
+        verbose=details.get("verbose", False)
+    )
+
+
+
+tasks = {}
+
+for name, details in config["tasks"].items():
+    tasks[name] = Task(
+        description=details["description"],
+        agent=agents[details["agent"]],
+        expected_output=details["expected_output"]
+    )
+
+
+crew_name = "fianncial_analysis_crew"   # ✅ change this to any crew from YAML
+
+crew_config = config["crews"][crew_name]
+
+selected_agents = [agents[a] for a in crew_config["agents"]]
+selected_tasks = [tasks[t] for t in crew_config["tasks"]]
+
+
+
 
 # =========================
-# CREW CLASS
+# RUN PIPELINE FUNCTION ✅
 # =========================
+def run_pipeline(data, profile):
 
-@CrewBase
-class FinancialAdvisorCrew:
+    import json
 
-    agents: List[BaseAgent]
-    tasks: List[Task]
+    def safe_parse(x):
+        # ✅ Convert CrewOutput → string → dict
+        if hasattr(x, "raw"):
+            try:
+                return json.loads(x.raw)
+            except:
+                return {}
+        
+        if isinstance(x, str):
+            try:
+                return json.loads(x)
+            except:
+                return {}
 
-    agents_config = "config/agents.yaml"
-    tasks_config = "config/tasks.yaml"
+        return x
 
-    # -------------------------
-    # AGENTS
-    # -------------------------
+    financial_crew = Crew(
+    agents=selected_agents,
+    tasks=selected_tasks,
+    process=Process.sequential,  # or parallel
+    verbose=crew_config.get("verbose", True)
+)
+    # # ✅ Run analysis
+    # analysis_crew = Crew(
+    #     agents=[crew_instance.analysis_agent()],
+    #     tasks=[crew_instance.analysis_task()],
+    #     process=Process.sequential
+    # )
 
-    @agent
-    def data_agent(self) -> Agent:
-        return Agent(
-            config = self.agents_config["data_agent"]
-        )
+    # analysis_result = analysis_crew.kickoff(inputs={
+    #     "transactions": data
+    # })
 
-    @agent
-    def analysis_agent(self) -> Agent:
-        return Agent(
-           config = self.agents_config["analysis_agent"]
-        )
+    # analysis_result = safe_parse(analysis_result)
 
-    @agent
-    def risk_agent(self) -> Agent:
-        return Agent(
-            config = self.agents_config["risk_agent"]
-        )
+    # # ✅ Run risk
+    # risk_crew = Crew(
+    #     agents=[crew_instance.risk_agent()],
+    #     tasks=[crew_instance.risk_task()],
+    #     process=Process.sequential
+    # )
 
-    @agent
-    def advisory_agent(self) -> Agent:
-        return Agent(
-            config = self.agents_config["advisory_agent"]
-        )
+    # risk_result = risk_crew.kickoff(inputs={
+    #     "profile": profile
+    # })
 
-    @agent
-    def qa_agent(self) -> Agent:
-        return Agent(
-            config = self.agents_config["qa_agent"]
-        )
+    # risk_result = safe_parse(risk_result)
 
-    # -------------------------
-    # TASKS
-    # -------------------------
+    # # ✅ Run advisory (NOW FIXED ✅)
+    # advisory_crew = Crew(
+    #     agents=[crew_instance.advisory_agent()],
+    #     tasks=[crew_instance.advisory_task()],
+    #     process=Process.sequential
+    # )
 
-    @task
-    def data_task(self) -> Task:
-        return Task(
-            config = self.tasks_config["data_task"]
-        )
+    review_result = financial_crew.kickoff(inputs={
+        "transactions": data,
+        "profile": profile
+    })
 
-    @task
-    def analysis_task(self) -> Task:
-        return Task(
-            config = self.tasks_config["analysis_task"]
-        )
+    review_result = safe_parse(review_result)
 
-    @task
-    def risk_task(self) -> Task:
-        return Task(
-            config = self.tasks_config["risk_task"]
-        )
-
-    @task
-    def advisory_task(self) -> Task:
-        return Task(
-            config = self.tasks_config["advisory_task"]
-        )
-
-    @task
-    def qa_task(self) -> Task:
-        return Task(
-            config = self.tasks_config["qa_task"]
-        )
-
-    # -------------------------
-    # CREW
-    # -------------------------
-
-    def crew(self) -> Crew:
-        return Crew(
-            agents=self.agents,   # auto-collected via @agent
-            tasks=self.tasks,     # auto-collected via @task
-            process=Process.sequential,
-            verbose=True
-        )
+    # ✅ Final response
+    return {
+        "categories": review_result.get("categories", []),
+        "values": review_result.get("values", []),
+        "insights": review_result.get("insights", []),
+        "risk_profile": review_result.get("risk_profile", "Unknown"),
+        "advice": review_result.get("advice", [])
+    }

@@ -94,7 +94,7 @@ def render_expense_chart(data):
         fontsize=8
     )
 
-    st.pyplot(fig, use_container_width=False)
+    st.pyplot(fig, width='content')
 
 
 # =========================
@@ -105,12 +105,16 @@ def render_risk_profile(data):
 
     risk = data.get("risk_profile", "Unknown").lower()
 
-    if risk == "high":
+    if risk == "aggressive":
         st.error("High Risk")
-    elif risk == "moderate":
-        st.warning("Moderate Risk")
+    elif risk == "conservative":
+        st.warning("Low Risk")
     else:
-        st.success("Low Risk")
+        st.success("Moderate Risk")
+
+    if isinstance(data, dict) and data.get("justification"):
+        st.write(data["justification"])
+
 
 
 # =========================

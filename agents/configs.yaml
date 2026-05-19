@@ -94,11 +94,11 @@ tasks:
       - Analysis Data (categories, spending patterns)
 
       Rules:
-      - High loans compared to income → Conservative
-      - High savings rate (Fixed Deposits, Insurance-heavy) → Conservative
-      - High essential expenses (Rent, Medical, Utilities) → Conservative
-      - Younger age with high discretionary spending → Aggressive
-      - Otherwise → Moderate
+      - High loans compared to income -> Conservative
+      - High savings rate (Fixed Deposits, Insurance-heavy) -> Conservative
+      - High essential expenses (Rent, Medical, Utilities) -> Conservative
+      - Younger age with high discretionary spending -> Aggressive
+      - Otherwise -> Moderate
 
       Output JSON:
       {
@@ -136,7 +136,7 @@ tasks:
 
   review_task:
     description: >
-      Consolidate ALL outputs.
+      Consolidate all outputs from analysis_task, risk_task, and advisory_task.
 
       Output JSON:
       {

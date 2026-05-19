@@ -184,26 +184,6 @@ def handle_qa(query, profile):
 
 
 # =========================
-# FEEDBACK HANDLER
-# =========================
-def submit_feedback(query):
-    payload = {
-        "query": query,
-        "response": st.session_state.qa_response,
-        "correct_decision": st.session_state.correct_decision,
-        "compliant": st.session_state.compliant,
-        "fraud_detected": st.session_state.fraud_detected,
-        "safe_reasoning": st.session_state.safe_reasoning
-    }
-
-    result = post_request(FEEDBACK_API, json=payload)
-
-    if result:
-        reward = result.get("reward", 0)
-        st.success(f"✅ Feedback submitted! Reward Score: {reward}")
-
-
-# =========================
 # MAIN UI
 # =========================
 def main():

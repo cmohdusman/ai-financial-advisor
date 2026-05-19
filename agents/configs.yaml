@@ -3,177 +3,213 @@ agents:
     role: Financial Data Processor
     goal: Clean and structure transaction data
     backstory: >
-      You are an expert in parsing bank statements, cleaning financial datasets,
-      and ensuring structured, consistent outputs.
+      Expert in parsing bank statements and cleaning financial datasets.
     verbose: true
+
   analysis_agent:
     role: Financial Analyst
-    goal: Analyze user transactions and categorize spending
+    goal: Analyze transactions and categorize spending
     backstory: >
-      You specialize in personal finance analytics, identifying spending
-      patterns, categorizing transactions, and detecting financial behavior
-      trends.
+      Specialist in identifying spending patterns and financial trends.
     verbose: true
+
   risk_agent:
     role: Risk Evaluator
-    goal: Determine the user's financial risk profile
+    goal: Determine financial risk profile
     backstory: >
-      You are a certified financial risk advisor who evaluates user profiles and
-      determines investment risk tolerance.
+      Certified financial advisor assessing risk tolerance.
     verbose: true
+
   advisory_agent:
     role: Financial Advisor
-    goal: Provide financial recommendations and strategies
+    goal: Provide recommendations
     backstory: >
-      You are a professional investment advisor helping users optimize savings,
-      investments, and debt management.
+      Experienced advisor in savings, investments and debt optimization.
     verbose: true
+
   review_agent:
-    role: Expert reviewer of financial data
-    goal: 'Consolidate analysis, risk and advisory data'
+    role: Financial Output Consolidator
+    goal: Merge all outputs into structured response
     backstory: >
-      You are a expert reviewer of financial data helping to consolidate
-      financial analysis , risk and advisory data
+      Expert reviewer consolidating analysis, risk, and advisory outputs.
     verbose: true
+
   qa_agent:
     role: Financial Assistant
-    goal: Answer user financial queries accurately
+    goal: Answer financial queries using user data
     backstory: >
-      You are a helpful AI assistant capable of answering financial queries with
-      clear, actionable insights based on user data.
+      AI assistant providing clear and personalized financial insights.
     verbose: true
+
+
 tasks:
   data_task:
     description: >
-      Process the given transaction dataset.
+      Process transaction dataset.
 
-      Steps: 1. Extract transactions with fields: date, amount, merchant 2.
-      Remove duplicate records 3. Normalize amounts (consistent currency and
-      format) 4. Handle missing or invalid entries
+      Steps:
+      1. Extract: date, amount, merchant
+      2. Remove duplicates
+      3. Normalize amounts
+      4. Handle missing values
 
-      Output JSON: [
-        {
-          "date": "YYYY-MM-DD",
-          "amount": 1000,
-          "merchant": "Amazon"
-        }
+      Output JSON:
+      [
+        {"date": "YYYY-MM-DD", "amount": 1000, "merchant": "Amazon"}
       ]
-    expected_output: Cleaned structured transaction dataset
+    expected_output: Clean transaction dataset
     agent: data_agent
+
+
   analysis_task:
     description: >
-      Analyze financial transactions and categorize expenses.
-      Steps: 1. Categorize into:
-        - Food, Rent, Travel, EMI, Shopping, Utilities
-      2. Identify:
-        - Monthly spending trends
-        - Top 3 expense categories
-        - Unusual spikes
+      Categorize spending and analyze trends.
 
-      Output JSON: {
+      Categories:
+      - Food, Rent, Travel, EMI, Shopping, Utilities
+
+      Identify:
+      - Monthly trends
+      - Top 3 categories
+      - Unusual spikes
+
+      Output JSON:
+      {
         "categories": ["Food", "Rent"],
         "values": [30, 40],
-        "insights": [
-          "Food expenses are high",
-          "Significant increase in travel spending"
-        ]
+        "insights": ["Food expenses are high"]
       }
-    expected_output: Categorized expenses with insights
+    expected_output: Expense analysis
     agent: analysis_agent
+
   risk_task:
     description: >
       Evaluate the user's financial risk profile.
 
-      Inputs: - Age - Salary - Investments - Loans
+      Inputs:
+      - Age
+      - Salary
+      - Investments
+      - Loans
+      - Analysis Data (categories, spending patterns)
 
-      Rules: - High loans compared to income → Conservative - Younger age with
-      high savings → Aggressive - Otherwise → Moderate
+      Rules:
+      - High loans compared to income → Conservative
+      - High savings rate (Fixed Deposits, Insurance-heavy) → Conservative
+      - High essential expenses (Rent, Medical, Utilities) → Conservative
+      - Younger age with high discretionary spending → Aggressive
+      - Otherwise → Moderate
 
-      Output JSON: {
-        "risk_profile": "Moderate",
-        "justification": "Balanced income and moderate liabilities"
+      Output JSON:
+      {
+        "risk_profile": "...",
+        "justification": "Explain using BOTH profile and spending behavior"
       }
-    expected_output: User risk classification
-    agent: risk_agent
+
+    expected_output: Risk classification
+    agent: risk_agent   # ✅ FIXED (this was missing!)
+    context:
+      - analysis_task
+ 
+
   advisory_task:
     description: >
-      Provide financial advice based on transaction analysis and risk profile.
+      Provide financial advice.
 
-      Steps: 1. Suggest savings improvements 2. Recommend investment allocation
-      3. Provide debt reduction strategies
+      Use:
+      - Spending analysis
+      - Risk profile
 
-      Output JSON: {
+      Output JSON:
+      {
         "advice": [
-          "Invest 20% of income in mutual funds",
-          "Reduce discretionary spending by 10%",
-          "Build an emergency fund of 6 months salary"
+          "Invest 20% of income",
+          "Reduce spending"
         ]
       }
-    expected_output: Financial advisory recommendations
+    expected_output: Financial advice
     agent: advisory_agent
     context:
       - risk_task
       - analysis_task
+
+
   review_task:
     description: >
-      Consolidate outputs from all agents into below given format.
-      Output JSON: {
-        "categories": ["Food", "Rent"],
-        "values": [30, 40],
-        "insights": [
-          "Food expenses are high",
-          "Significant increase in travel spending"
-        ],
-        "risk_profile": "Moderate",
-        "justification": "Balanced income and moderate liabilities",
-        "advice": [
-          "Invest 20% of income in mutual funds",
-          "Reduce discretionary spending by 10%",
-          "Build an emergency fund of 6 months salary"
-        ]
+      Consolidate ALL outputs.
+
+      Output JSON:
+      {
+        "categories": [],
+        "values": [],
+        "insights": [],
+        "risk_profile": "",
+        "justification": "",
+        "advice": []
       }
-    expected_output: 'Financial Analysis,Risk and Advise'
+    expected_output: Final financial output
     agent: review_agent
     context:
       - risk_task
       - analysis_task
       - advisory_task
+
+
   qa_task:
     description: >
       Answer user financial queries.
 
       User Query: {query}
 
-      User Financial Profile: - Age: {age} - Salary: {salary} - Investments:
-      {investments} - Loans: {loans}
+      Profile:
+      - Age: {age}
+      - Salary: {salary}
+      - Investments: {investments}
+      - Loans: {loans}
 
-      Instructions: 
-      - First determine if the question is related to finance.
-      - Consider ANY query about salary, income, savings, investments, loans, or profile details as financial. 
-      - If the user asks about their own financial data (e.g., salary, investments, loans):
-        - Directly fetch from provided inputs
-        - Do NOT generate advice unnecessarily
-        - Answer clearly with the value
+      Analysis Data:
+      {analysis-data}
 
-      - If the question is financial:
-          - Use the user's financial profile and analysis data
-          - Provide personalized financial advice
-      - If the question is NOT financial:
-          - Clearly state that you are a financial assistant and can only help with finance-related queries
-          - Offer to help with financial questions instead
-      - ALWAYS use the provided financial profile - DO NOT ask the user again
-      for financial details - Provide a direct and actionable answer     -
-      Format answer in clean paragraphs - Use bullet points for advice - Avoid
-      broken words or spacing issues - Ensure numbers are properly formatted
-      (e.g., 20,000) - Use BOTH profile and spending data - Identify
-      overspending patterns - Give personalized advice - DO NOT ask for data
-      again
-    expected_output: Answer to user query
+      RULES:
+
+      1. Classification:
+      - Treat salary, income, investments, loans as financial
+      - If unclear → assume financial
+
+      2. Direct Data Questions:
+      - If user asks: "my salary", "my loans", etc:
+        → Respond directly from profile
+        → Do NOT add unnecessary advice
+
+      Examples:
+      Q: What is my salary?
+      A: Your current salary is ₹{salary}.
+
+      Q: How much do I earn?
+      A: You earn ₹{salary} per month.
+
+      3. Financial Advice Questions:
+      - Use BOTH profile + analysis data
+      - Identify overspending
+      - Give bullet-point recommendations
+
+      4. Non-Financial Queries:
+      - Politely decline and redirect
+
+      5. Strict Rules:
+      - NEVER ask user for data again
+      - ALWAYS use given inputs
+      - Format cleanly
+      - Use proper numbers (₹20,000)
+
+    expected_output: Financial answer
     agent: qa_agent
     context:
       - review_task
+
+
 crews:
-  fianncial_analysis_crew:
+  financial_analysis_crew:   
     name: Financial Analysis Crew
     agents:
       - data_agent
@@ -189,8 +225,10 @@ crews:
       - review_task
     process: sequential
     verbose: true
-  fianncial_qa_crew:
-    name: Financial QNA Crew
+
+
+  financial_qa_crew:   
+    name: Financial QnA Crew
     agents:
       - qa_agent
     tasks:

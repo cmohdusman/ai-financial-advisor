@@ -48,12 +48,12 @@ tasks:
       Process transaction dataset.
 
       Steps:
-      1. Extract: date, amount, merchant
+      1. Extract fields for analysis of financial data, label the fields and export in form of JSON
       2. Remove duplicates
       3. Normalize amounts
       4. Handle missing values
 
-      Output JSON:
+      Output JSON Sample:
       [
         {"date": "YYYY-MM-DD", "amount": 1000, "merchant": "Amazon"}
       ]

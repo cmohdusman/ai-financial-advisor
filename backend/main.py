@@ -18,7 +18,7 @@ async def analyze(file: UploadFile, age:int, salary:float,
         "goals": goals
     }
 
-    result = run_pipeline(df.to_dict(orient="records"), profile)
+    result =await run_pipeline(df.to_dict(orient="records"), profile)
 
     return result
 
@@ -32,4 +32,4 @@ async def qa(user_input: dict):
         "loans": user_input["loans"],
         "analysis": user_input["analysis"]
     }
-    return run_qa_query(user_input["query"], profile)
+    return await run_qa_query(user_input["query"], profile)

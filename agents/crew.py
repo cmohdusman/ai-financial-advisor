@@ -136,9 +136,9 @@ financial_qa_crew = build_crew(QA_CREW_NAME, config, agents, tasks)
 # =========================
 # PIPELINE FUNCTION
 # =========================
-def run_pipeline(data: Dict, profile: Dict) -> Dict:
+async def run_pipeline(data: Dict, profile: Dict) -> Dict:
     try:
-        response = financial_crew.kickoff(inputs={
+        response = await financial_crew.kickoff_async(inputs={
             "transactions": data,
             "profile": profile
         })
@@ -161,9 +161,9 @@ def run_pipeline(data: Dict, profile: Dict) -> Dict:
 # =========================
 # QA FUNCTION
 # =========================
-def run_qa_query(query: str, profile: Dict) -> str:
+async def run_qa_query(query: str, profile: Dict) -> str:
     try:
-        response = financial_qa_crew.kickoff(inputs={
+        response = await financial_qa_crew.kickoff_async(inputs={
             "query": query,
             "age": profile.get("age"),
             "salary": profile.get("salary"),

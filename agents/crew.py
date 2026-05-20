@@ -150,6 +150,7 @@ async def run_pipeline(data: Dict, profile: Dict) -> Dict:
             "values": parsed.get("values", []),
             "insights": parsed.get("insights", []),
             "risk_profile": parsed.get("risk_profile", "Unknown"),
+            "justification": parsed.get("justification", "Unknown"),
             "advice": parsed.get("advice", [])
         }
 

@@ -95,8 +95,14 @@ def render_risk_profile(data):
     else:
         st.success(risk)
 
-    if isinstance(data, dict) and data.get("justification"):
-        st.write(data["justification"])
+    print("data")
+    print(data)
+    justification = data.get("justification")
+    print("justification")
+    print(justification)
+    if justification:
+        st.markdown("### 📖 Justification")
+        st.info(justification)
 
 
 

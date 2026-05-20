@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import matplotlib.pyplot as plt
+import pandas as pd
 
 # =========================
 # CONFIG
@@ -22,6 +23,8 @@ DEFAULT_SESSION_STATE = {
     "compliant": False,
     "fraud_detected": False,
     "safe_reasoning": False,
+    "analysis_done": False,
+    "chat_history": []
 }
 
 for key, value in DEFAULT_SESSION_STATE.items():
@@ -65,35 +68,16 @@ def render_sidebar():
     
     return profile
 
-
-
-
 # =========================
-# EXPENSE CHART
+# Render BAR Chart
 # =========================
-def render_expense_chart(data):
-    st.subheader("📊 Expense Breakdown")
+def render_bar_chart(data):
+    df = pd.DataFrame({
+        "Category": data["categories"],
+        "Amount": data["values"]
+    }).sort_values(by="Amount", ascending=False)
 
-    if "categories" not in data or "values" not in data:
-        st.warning("No category data returned")
-        return
-
-    fig, ax = plt.subplots(figsize=(2, 2))
-    wedges, _, _ = ax.pie(
-        data["values"],
-        autopct="%1.1f%%",
-        textprops={'fontsize': 8}
-    )
-
-    ax.legend(
-        wedges,
-        data["categories"],
-        loc="center left",
-        bbox_to_anchor=(1, 0.5),
-        fontsize=8
-    )
-
-    st.pyplot(fig, width='content')
+    st.bar_chart(df.set_index("Category"))
 
 
 # =========================
@@ -151,11 +135,9 @@ def analyze_finances(file, profile):
 
         if result:
             st.session_state.analysis_data = result
-            st.success("✅ Analysis Completed!")
-
-            render_expense_chart(result)
-            render_risk_profile(result)
-            render_advice(result)
+            st.session_state.analysis_done = True
+            st.session_state.chat_history = []
+            st.success(" Analysis Completed!")
 
 
 # =========================
@@ -181,9 +163,10 @@ def handle_qa(query, profile):
 
     if result:
         if isinstance(result, dict):
-            st.session_state.qa_response = result.get("raw", str(result))
-        else:
-            st.session_state.qa_response = str(result)
+            return result.get("raw", str(result))
+        return str(result)
+
+    return "❌ Failed to get response"
 
 
 # =========================
@@ -200,36 +183,66 @@ def main():
     st.header("📂 Upload Transaction CSV")
     file = st.file_uploader("Upload your transactions file", type=["csv"])
 
-    if file and st.button("🚀 Analyze"):
-        analyze_finances(file, profile)
+    if st.button("🚀 Analyze"):
+        if file:
+            analyze_finances(file, profile)
+        else:
+            st.warning("Please upload a file first")
+    
+    if st.session_state.analysis_done:
+        st.header("📊 Financial Analysis Results")
+        render_bar_chart(st.session_state.analysis_data)
+        render_risk_profile(st.session_state.analysis_data)
+        render_advice(st.session_state.analysis_data)
 
-    # # ALWAYS SHOW PREVIOUS ANALYSIS
-    # if st.session_state.analysis_data:
-    #     st.header("📊 Financial Analysis Results")
-    #     render_expense_chart(st.session_state.analysis_data)
-    #     render_risk_profile(st.session_state.analysis_data)
-    #     render_advice(st.session_state.analysis_data)
-
-
+   
     # =========================
-    # QA SECTION
+    # CHATGPT-STYLE QA SECTION
     # =========================
-    st.header("💬 Ask Financial Questions")
+    st.header("💬 Financial Chat Assistant")
 
-    with st.form("qa_form"):
-        query = st.text_input("Ask something like: Can I afford a loan?")
-        submit = st.form_submit_button("Ask AI")
+    if not st.session_state.get("analysis_done", False):
+        st.warning("⚠ Please run analysis first")
+    else:
+        #  Show chat history
+        for msg in st.session_state.chat_history:
+            with st.chat_message(msg["role"]):
+                st.write(msg["content"])
 
-    if submit and query:
-        handle_qa(query, profile)
+        #  Chat input (ChatGPT style)
+        user_input = st.chat_input("Ask a financial question...")
 
-    # =========================
-    # RESPONSE DISPLAY
-    # =========================
-    if st.session_state.qa_response:
-        st.markdown("### 🤖 AI Response")
-        st.text(st.session_state.qa_response)
+        if user_input:
+            #  Add user message
+            st.session_state.chat_history.append({
+                "role": "user",
+                "content": user_input
+            })
 
+            #  Show user message immediately
+            with st.chat_message("user"):
+                st.write(user_input)
+
+            #  Get AI response
+            with st.chat_message("assistant"):
+                with st.spinner("Thinking..."):
+                    response = handle_qa(user_input, profile)
+
+                    # fallback if your function doesn't return
+                    if not response:
+                        response = st.session_state.get("qa_response", "No response")
+
+                    st.write(response)
+
+            #  Save AI response
+            st.session_state.chat_history.append({
+                "role": "assistant",
+                "content": response
+            })
+
+            #  trigger UI refresh (prevents duplication issues)
+            st.rerun()
+    
 # =========================
 # RUN APP
 # =========================

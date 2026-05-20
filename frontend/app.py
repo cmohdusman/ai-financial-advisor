@@ -60,9 +60,9 @@ def render_sidebar():
 
     profile = {
         "age": st.sidebar.slider("Age", 18, 100, 30),
-        "salary": st.sidebar.slider("Salary", 100,100000, 10000),
-        "investments": st.sidebar.slider("Investments", 100,100000,5000),
-        "loans": st.sidebar.slider("Loans", 100,10000,5000),
+        "salary": st.sidebar.number_input("Salary", min_value=1000, max_value=1000000, step=100, value=85000),
+        "investments": st.sidebar.number_input("Investments", min_value=0, max_value=10000000, step=100, value=250000),
+        "loans": st.sidebar.number_input("Loans", min_value=0, max_value=10000000, step=100, value=60000),
         "goals": st.sidebar.text_area("Goals", "Save for house"),
     }
     
@@ -95,11 +95,7 @@ def render_risk_profile(data):
     else:
         st.success(risk)
 
-    print("data")
-    print(data)
     justification = data.get("justification")
-    print("justification")
-    print(justification)
     if justification:
         st.markdown("### 📖 Justification")
         st.info(justification)

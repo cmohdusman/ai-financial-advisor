@@ -8,7 +8,11 @@ agents:
 
   analysis_agent:
     role: Financial Analyst
-    goal: Analyze transactions and categorize spending
+    goal: >
+      Analyze transactions and categorize spending
+      Never reduce the number of categories
+      Always return fix schema output
+
     backstory: >
       Specialist in identifying spending patterns and financial trends.
     verbose: true
@@ -50,8 +54,7 @@ tasks:
       Steps:
       1. Extract fields for analysis of financial data, label the fields and export in form of JSON
       2. Remove duplicates
-      3. Normalize amounts
-      4. Handle missing values
+      3. Handle missing values
 
       Output JSON Sample:
       [
@@ -63,24 +66,74 @@ tasks:
 
   analysis_task:
     description: >
-      Categorize spending and analyze trends.
+      Categorize all transactions into STRICT financial categories and analyze trends.
 
-      Categories:
-      - Food, Rent, Travel, EMI, Shopping, Utilities
+      You MUST classify every transaction into ONE of the following categories:
+      - Food
+      - Rent
+      - Travel
+      - EMI
+      - Shopping
+      - Utilities
+      - Investements
 
-      Identify:
-      - Monthly trends
-      - Top 3 categories
+      === STRICT MAPPING RULES ===
+      Use these mappings while categorizing:
+      - Swiggy, Zomato, Groceries -> Food
+      - Uber, Ola, Taxi -> Travel
+      - Amazon, Flipkart, Shopping -> Shopping
+      - Rent -> Rent
+      - EMI -> EMI
+      - Electricity, Internet, Utilities -> Utilities
+      - Fixed Deposits, Mutual Funds, Stocks, Securities, Bond -> Investements
+
+      DO NOT merge categories.
+      DO NOT create new categories.
+      DO NOT drop any category even if values are small.
+      ALWAYS include all categories in output.
+
+      === ANALYSIS REQUIREMENTS ===
+      Also identify:
+      - Monthly spending trends
       - Unusual spikes
+      - Spending distribution across categories
 
-      Output JSON:
+      === OUTPUT FORMAT (STRICT JSON) ===
       {
-        "categories": ["Food", "Rent"],
-        "values": [30, 40],
-        "insights": ["Food expenses are high"]
+        "categories": ["Food", "Rent", "Travel", "EMI", "Shopping", "Utilities", "Investements"],
+        "values": [total_amounts_per_category],
+        "insights": ["Key observations about spending behavior"]
       }
-    expected_output: Expense analysis
+
+      Ensure:
+      - categories list ALWAYS contains all 7 categories
+      - values correspond exactly to categories order
+      - no category is missing even if value is 0
+
+    expected_output: Strict categorized financial analysis in JSON
     agent: analysis_agent
+
+
+  # analysis_task:
+  #   description: >
+  #     Categorize spending and analyze trends.
+
+  #     Categories Sample:
+  #     - Food, Rent, Travel, EMI, Shopping, Utilities
+
+  #     Identify:
+  #     - Monthly trends
+  #     - Handle both spends and investements 
+  #     - Unusual spikes
+
+  #     Output JSON Sample:
+  #     {
+  #       "categories": ["Food", "Rent", "Investments"],
+  #       "values": [30, 40 , 10],
+  #       "insights": ["Food expenses are high"]
+  #     }
+  #   expected_output: Expense analysis
+  #   agent: analysis_agent
 
   risk_task:
     description: >
@@ -94,11 +147,12 @@ tasks:
       - Analysis Data (categories, spending patterns)
 
       Rules:
-      - High loans compared to income -> Conservative
+      - High loans compared to income -> Aggressive
       - High savings rate (Fixed Deposits, Insurance-heavy) -> Conservative
       - High essential expenses (Rent, Medical, Utilities) -> Conservative
       - Younger age with high discretionary spending -> Aggressive
-      - Otherwise -> Moderate
+      - Balanced earning and overall spends -> Moderate
+      - High expeses along with good investements -> Moderate
 
       Output JSON:
       {
@@ -174,12 +228,12 @@ tasks:
 
       1. Classification:
       - Treat salary, income, investments, loans as financial
-      - If unclear → assume financial
+      - If unclear -> assume financial
 
       2. Direct Data Questions:
       - If user asks: "my salary", "my loans", etc:
-        → Respond directly from profile
-        → Do NOT add unnecessary advice
+        -> Respond directly from profile
+        -> Do NOT add unnecessary advice
 
       Examples:
       Q: What is my salary?

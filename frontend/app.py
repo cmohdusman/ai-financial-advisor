@@ -85,7 +85,6 @@ def render_expense_chart(data):
         textprops={'fontsize': 8}
     )
 
-    ax.set_title("Expense Breakdown", fontsize=10)
     ax.legend(
         wedges,
         data["categories"],
@@ -110,7 +109,7 @@ def render_risk_profile(data):
     elif risk == "conservative":
         st.warning("Low Risk")
     else:
-        st.success("Moderate Risk")
+        st.success(risk)
 
     if isinstance(data, dict) and data.get("justification"):
         st.write(data["justification"])
@@ -203,6 +202,14 @@ def main():
 
     if file and st.button("🚀 Analyze"):
         analyze_finances(file, profile)
+
+    # # ALWAYS SHOW PREVIOUS ANALYSIS
+    # if st.session_state.analysis_data:
+    #     st.header("📊 Financial Analysis Results")
+    #     render_expense_chart(st.session_state.analysis_data)
+    #     render_risk_profile(st.session_state.analysis_data)
+    #     render_advice(st.session_state.analysis_data)
+
 
     # =========================
     # QA SECTION
